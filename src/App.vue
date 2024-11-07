@@ -1,19 +1,19 @@
 <template>
   <v-app>
     <v-main>
-      <HelloWorld />
+      <SalesRecords />
     </v-main>
   </v-app>
 </template>
 
 <script>
-import HelloWorld from "./components/HelloWorld.vue";
+import SalesRecords from "./components/SalesRecords.vue";
 
 export default {
   name: "App",
 
   components: {
-    HelloWorld,
+    SalesRecords,
   },
 
   data: () => ({

@@ -2,8 +2,21 @@
   <div class="sales-dashboard">
     <h2>Sales Records</h2>
 
-    <v-btn class="sales-dashboard__filter" variant="flat"> Filter Popup </v-btn>
+    <v-btn
+      class="sales-dashboard__filter"
+      variant="flat"
+      @click="showFilterPopup = true"
+    >
+      Set Filter
+    </v-btn>
   </div>
+
+  <FilterModal
+    v-if="showFilterPopup"
+    :customers="customerNames"
+    :countries="countries"
+    @close="showFilterPopup = false"
+  />
 
   <v-data-table
     :headers="headers"
@@ -16,7 +29,14 @@
 </template>
 
 <script>
+import FilterModal from "@/components/FilterModal.vue";
+import { ref } from "vue";
+
 export default {
+  components: {
+    FilterModal,
+  },
+
   setup() {
     const headers = [
       {
@@ -140,9 +160,19 @@ export default {
       },
     ];
 
+    // Filter options based on data available
+    const customerNames = Array.from(
+      new Set(orders.map((order) => order.customerName))
+    );
+    const countries = Array.from(new Set(orders.map((order) => order.country)));
+    const showFilterPopup = ref(false);
+
     return {
       headers,
       orders,
+      customerNames,
+      countries,
+      showFilterPopup,
     };
   },
 };
@@ -157,6 +187,7 @@ export default {
   &__filter {
     text-transform: capitalize;
     background-color: #8bbce3;
+    font-weight: 600;
   }
 }
 

@@ -1,36 +1,31 @@
 <template>
-  <div class="sales-dashboard">
-    <h2>Sales Records</h2>
+  <div>
+    <div class="sales-dashboard">
+      <h2>Sales Records</h2>
+      <v-btn variant="flat" color="#01579b" @click="showFilterPopup = true">
+        Set Filter
+      </v-btn>
+    </div>
 
-    <v-btn
-      class="sales-dashboard__filter"
-      variant="flat"
-      @click="showFilterPopup = true"
-    >
-      Set Filter
-    </v-btn>
+    <div v-if="showFilterPopup" class="sales-filter">
+      <FilterModal
+        :customers="customerNames"
+        :countries="countries"
+        @close="showFilterModal = false"
+        @apply-filters="onApplyFilters"
+        class="sales-filter__card"
+      />
+    </div>
+
+    <v-data-table :headers="headers" :items="filteredData" :items-per-page="10">
+      <template v-slot:bottom></template>
+    </v-data-table>
   </div>
-
-  <FilterModal
-    v-if="showFilterPopup"
-    :customers="customerNames"
-    :countries="countries"
-    @close="showFilterPopup = false"
-  />
-
-  <v-data-table
-    :headers="headers"
-    :items="orders"
-    :items-per-page="10"
-    color="sales-records"
-  >
-    <template v-slot:bottom></template>
-  </v-data-table>
 </template>
 
 <script>
 import FilterModal from "@/components/FilterModal.vue";
-import { ref } from "vue";
+import { ref, reactive, computed } from "vue";
 
 export default {
   components: {
@@ -77,7 +72,7 @@ export default {
       },
     ];
 
-    const orders = [
+    const records = ref([
       {
         orderNo: 1,
         customerName: "Kivell",
@@ -158,21 +153,101 @@ export default {
         country: "China",
         createdDate: "1/23/2019",
       },
-    ];
+    ]);
 
-    // Filter options based on data available
-    const customerNames = Array.from(
-      new Set(orders.map((order) => order.customerName))
-    );
-    const countries = Array.from(new Set(orders.map((order) => order.country)));
     const showFilterPopup = ref(false);
 
+    // Filter state
+    const filterState = reactive({
+      dateFrom: null,
+      dateTo: null,
+      customers: [],
+      countries: [],
+      status: {
+        open: false,
+        processing: false,
+        accepted: false,
+        rejected: false,
+      },
+      category: {
+        electronics: false,
+        furniture: false,
+        others: false,
+      },
+    });
+
+    // Derived data
+    const customerNames = computed(() =>
+      Array.from(new Set(records.value.map((order) => order.customerName)))
+    );
+    const countries = computed(() =>
+      Array.from(new Set(records.value.map((order) => order.country)))
+    );
+
+    const filteredData = computed(() =>
+      records.value.filter((item) => {
+        // Date range filter
+        if (
+          filterState.dateFrom &&
+          new Date(item.createdDate) < new Date(filterState.dateFrom)
+        ) {
+          return false;
+        }
+        if (
+          filterState.dateTo &&
+          new Date(item.createdDate) > new Date(filterState.dateTo)
+        ) {
+          return false;
+        }
+
+        // Customer name filter
+        if (
+          filterState.customers.length &&
+          !filterState.customers.includes(item.customerName)
+        ) {
+          return false;
+        }
+
+        // Country filter
+        if (
+          filterState.countries.length &&
+          !filterState.countries.includes(item.country)
+        ) {
+          return false;
+        }
+
+        // Status filter
+        if (
+          Object.values(filterState.status).some((status) => status) &&
+          !filterState.status[item.status.toLowerCase()]
+        ) {
+          return false;
+        }
+
+        // Category filter
+        if (
+          Object.values(filterState.category).some((category) => category) &&
+          !filterState.category[item.category.toLowerCase().replace(" ", "")]
+        ) {
+          return false;
+        }
+
+        return true;
+      })
+    );
+
+    const onApplyFilters = (filters) => {
+      Object.assign(filterState, filters);
+      showFilterPopup.value = false;
+    };
+
     return {
+      showFilterPopup,
       headers,
-      orders,
+      filteredData,
       customerNames,
       countries,
-      showFilterPopup,
+      onApplyFilters,
     };
   },
 };
@@ -183,11 +258,27 @@ export default {
   display: flex;
   justify-content: space-between;
   margin: 0 0 1.5rem 0;
+}
 
-  &__filter {
-    text-transform: capitalize;
-    background-color: #8bbce3;
-    font-weight: 600;
+.sales-filter {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+
+  &__card {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    width: 900px;
   }
 }
 

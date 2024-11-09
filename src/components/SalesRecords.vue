@@ -163,20 +163,11 @@ export default {
       dateTo: null,
       customers: [],
       countries: [],
-      status: {
-        open: false,
-        processing: false,
-        accepted: false,
-        rejected: false,
-      },
-      category: {
-        electronics: false,
-        furniture: false,
-        others: false,
-      },
+      status: [],
+      category: [],
     });
 
-    // Derived data
+    // Dropdown options based on data
     const customerNames = computed(() =>
       Array.from(new Set(records.value.map((order) => order.customerName)))
     );
@@ -200,7 +191,6 @@ export default {
           return false;
         }
 
-        // Customer name filter
         if (
           filterState.customers.length &&
           !filterState.customers.includes(item.customerName)
@@ -208,7 +198,6 @@ export default {
           return false;
         }
 
-        // Country filter
         if (
           filterState.countries.length &&
           !filterState.countries.includes(item.country)
@@ -216,7 +205,6 @@ export default {
           return false;
         }
 
-        // Status filter
         if (
           Object.values(filterState.status).some((status) => status) &&
           !filterState.status[item.status.toLowerCase()]
@@ -224,10 +212,9 @@ export default {
           return false;
         }
 
-        // Category filter
         if (
           Object.values(filterState.category).some((category) => category) &&
-          !filterState.category[item.category.toLowerCase().replace(" ", "")]
+          !filterState.category[item.category.toLowerCase()]
         ) {
           return false;
         }

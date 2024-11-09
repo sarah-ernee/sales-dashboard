@@ -6,7 +6,6 @@ Vue.use(VueRouter);
 
 const routes = [
   { path: "/", name: "Home", component: Home },
-  // Add additional routes here
 ];
 
 const router = new VueRouter({

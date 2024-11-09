@@ -323,16 +323,23 @@ export default {
     loadFilters();
 
     const applyFilters = () => {
+      const formatDate = (date) => {
+        if (!date) return null;
+
+        const [month, day, year] = date.split("/");
+        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+      };
+
       const filters = {
-        dateFrom: dateFrom.value || null,
-        dateTo: dateTo.value || null,
+        dateFrom: formatDate(dateFrom.value),
+        dateTo: formatDate(dateTo.value),
         customers: selectedCustomers.value.length
           ? selectedCustomers.value
           : [],
         status: allStatus.value
           ? []
           : Object.keys(status).filter((s) => status[s]),
-        categories: allCategories.value
+        category: allCategories.value
           ? []
           : Object.keys(category).filter((c) => category[c]),
         countries: selectedCountries.value.length
@@ -341,7 +348,6 @@ export default {
       };
 
       emit("apply-filters", filters);
-      emit("close");
     };
 
     watch(

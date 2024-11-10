@@ -2,7 +2,11 @@
   <div>
     <div class="sales-dashboard">
       <h2>Sales Records</h2>
-      <v-btn variant="flat" color="#01579b" @click="showFilterPopup = true">
+      <v-btn
+        variant="flat"
+        class="sales-dashboard__button"
+        @click="showFilterPopup = true"
+      >
         Set Filter
       </v-btn>
     </div>
@@ -18,7 +22,19 @@
     />
   </div>
 
-  <v-data-table :headers="headers" :items="records"> </v-data-table>
+  <v-data-table :headers="headers" :items="records" class="sales-records">
+    <template #headers>
+      <tr>
+        <th
+          v-for="header in headers"
+          :key="header.title"
+          class="sales-records__header"
+        >
+          <div class="sales-records__header-text">{{ header.title }}</div>
+        </th>
+      </tr>
+    </template>
+  </v-data-table>
 </template>
 
 <script>
@@ -48,7 +64,6 @@ export default {
         key: "order_no",
         align: "start",
         sortable: true,
-        class: "success--text title"
       },
       {
         title: "Customer Name",
@@ -116,11 +131,19 @@ export default {
   justify-content: space-between;
   margin: 0 0 5px 0;
 
+  &__button {
+    background-color: #006064;
+    color: white !important;
+    text-transform: capitalize;
+    border-radius: 5px;
+    width: 120px;
+  }
+
   &__timestamp {
     font-size: 10px;
-    color: #01579b;
+    color: #006064;
     font-style: italic;
-    margin: 0 0 24px 0;
+    margin: 0 0 30px 0;
   }
 }
 
@@ -148,5 +171,18 @@ export default {
 
 .sales-records {
   margin: 1rem 0 0 0;
+  text-align: center;
+
+  &__header {
+    background-color: #01787c;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+
+    &-text {
+      text-align: center;
+      padding: 10px;
+    }
+  }
 }
 </style>

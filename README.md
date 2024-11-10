@@ -23,4 +23,7 @@ MySQL, NodeJS + Express REST API setup within a containerized backend.
 Recommendation: Have the filter component be a button in the top right that triggers expansion panels. User will only dropdown fields that they want to filter by. 
 
 2. Free form textfields for date range input necessitates user's manual input. Involves extra steps in terms of validation and date formatting.
-Recommendation: Easier for dev and better for user experience to use a v-date-picker instead of a free form input field. 
+Recommendation: Easier for dev and better for user experience to use a v-date-picker instead of a free form input field.
+
+ 3. Reloading dashboard every one minute may leave user with not much time to linger on filtered data especially if page is for analysis.
+Recommendation: Decrease granularity of reloading. Alternatively, pages that always reload to show updated data typically do not have this much filter toggling to do. 

@@ -6,26 +6,26 @@
         Set Filter
       </v-btn>
     </div>
-
-    <div v-if="showFilterPopup" class="sales-filter">
-      <FilterModal
-        :customers="customerNames"
-        :countries="countries"
-        @close="showFilterModal = false"
-        @apply-filters="onApplyFilters"
-        class="sales-filter__card"
-      />
-    </div>
-
-    <v-data-table :headers="headers" :items="filteredData" :items-per-page="10">
-      <template v-slot:bottom></template>
-    </v-data-table>
+    <p class="sales-dashboard__timestamp">Last updated: {{ lastUpdated }}</p>
   </div>
+
+  <div v-if="showFilterPopup" class="sales-filter">
+    <FilterModal
+      :customers="nameSelections"
+      :countries="countrySelections"
+      @close="showFilterPopup = false"
+      class="sales-filter__card"
+    />
+  </div>
+
+  <v-data-table :headers="headers" :items="records"> </v-data-table>
 </template>
 
 <script>
 import FilterModal from "@/components/FilterModal.vue";
-import { ref, reactive, computed } from "vue";
+import { useSalesStore } from "@/store/salesStore";
+import { storeToRefs } from "pinia";
+import { ref, onBeforeMount, watch, onUnmounted } from "vue";
 
 export default {
   components: {
@@ -33,208 +33,78 @@ export default {
   },
 
   setup() {
+    const store = useSalesStore();
+    const { fetchRecords } = store;
+    const { records } = storeToRefs(store);
+
+    const lastUpdated = ref(new Date().toLocaleString());
+    const updateLastUpdated = () => {
+      lastUpdated.value = new Date().toLocaleString();
+    };
+
     const headers = [
       {
         title: "Order No",
-        key: "orderNo",
+        key: "order_no",
         align: "start",
         sortable: true,
+        class: "success--text title"
       },
       {
         title: "Customer Name",
-        key: "customerName",
+        key: "customer_name",
         align: "start",
         sortable: true,
       },
-      {
-        title: "Status",
-        key: "status",
-        align: "start",
-        sortable: true,
-      },
-      {
-        title: "Category",
-        key: "category",
-        align: "start",
-        sortable: true,
-      },
-      {
-        title: "Country",
-        key: "country",
-        align: "start",
-        sortable: true,
-      },
+      { title: "Status", key: "status", align: "start", sortable: true },
+      { title: "Category", key: "category", align: "start", sortable: true },
+      { title: "Country", key: "country", align: "start", sortable: true },
       {
         title: "Created Date",
-        key: "createdDate",
+        key: "created_date",
         align: "start",
         sortable: true,
       },
     ];
 
-    const records = ref([
-      {
-        orderNo: 1,
-        customerName: "Kivell",
-        status: "Accepted",
-        category: "Electronics",
-        country: "United Kingdom",
-        createdDate: "1/23/2019",
-      },
-      {
-        orderNo: 2,
-        customerName: "Jardine",
-        status: "Processing",
-        category: "Furniture",
-        country: "Russia",
-        createdDate: "1/23/2019",
-      },
-      {
-        orderNo: 3,
-        customerName: "Gill",
-        status: "Rejected",
-        category: "Stationery",
-        country: "German",
-        createdDate: "1/23/2019",
-      },
-      {
-        orderNo: 4,
-        customerName: "Sor’vino",
-        status: "Open",
-        category: "Furniture",
-        country: "Singapore",
-        createdDate: "1/23/2019",
-      },
-      {
-        orderNo: 5,
-        customerName: "Jones",
-        status: "Rejected",
-        category: "Sports",
-        country: "German",
-        createdDate: "1/23/2019",
-      },
-      {
-        orderNo: 6,
-        customerName: "Andrews",
-        status: "Processing",
-        category: "Electronics",
-        country: "Malaysia",
-        createdDate: "1/23/2019",
-      },
-      {
-        orderNo: 7,
-        customerName: "Jardine",
-        status: "Processing",
-        category: "Sports",
-        country: "German",
-        createdDate: "1/23/2019",
-      },
-      {
-        orderNo: 8,
-        customerName: "Thompson",
-        status: "Accepted",
-        category: "Hardware",
-        country: "Malaysia",
-        createdDate: "1/23/2019",
-      },
-      {
-        orderNo: 9,
-        customerName: "Jones",
-        status: "Open",
-        category: "Furniture",
-        country: "Taiwan",
-        createdDate: "1/23/2019",
-      },
-      {
-        orderNo: 10,
-        customerName: "Morgan",
-        status: "Processing",
-        category: "Sports",
-        country: "China",
-        createdDate: "1/23/2019",
-      },
-    ]);
-
+    const nameSelections = ref([]);
+    const countrySelections = ref([]);
     const showFilterPopup = ref(false);
 
-    // Filter state
-    const filterState = reactive({
-      dateFrom: null,
-      dateTo: null,
-      customers: [],
-      countries: [],
-      status: [],
-      category: [],
+    onBeforeMount(() => {
+      fetchRecords();
+      updateLastUpdated();
+
+      const intervalId = setInterval(() => {
+        fetchRecords();
+        updateLastUpdated();
+      }, 60000);
+
+      onUnmounted(() => {
+        clearInterval(intervalId);
+      });
     });
 
-    // Dropdown options based on data
-    const customerNames = computed(() =>
-      Array.from(new Set(records.value.map((order) => order.customerName)))
-    );
-    const countries = computed(() =>
-      Array.from(new Set(records.value.map((order) => order.country)))
-    );
+    watch(records, (newRecords) => {
+      updateLastUpdated();
 
-    const filteredData = computed(() =>
-      records.value.filter((item) => {
-        // Date range filter
-        if (
-          filterState.dateFrom &&
-          new Date(item.createdDate) < new Date(filterState.dateFrom)
-        ) {
-          return false;
-        }
-        if (
-          filterState.dateTo &&
-          new Date(item.createdDate) > new Date(filterState.dateTo)
-        ) {
-          return false;
-        }
-
-        if (
-          filterState.customers.length &&
-          !filterState.customers.includes(item.customerName)
-        ) {
-          return false;
-        }
-
-        if (
-          filterState.countries.length &&
-          !filterState.countries.includes(item.country)
-        ) {
-          return false;
-        }
-
-        if (
-          Object.values(filterState.status).some((status) => status) &&
-          !filterState.status[item.status.toLowerCase()]
-        ) {
-          return false;
-        }
-
-        if (
-          Object.values(filterState.category).some((category) => category) &&
-          !filterState.category[item.category.toLowerCase()]
-        ) {
-          return false;
-        }
-
-        return true;
-      })
-    );
-
-    const onApplyFilters = (filters) => {
-      Object.assign(filterState, filters);
-      showFilterPopup.value = false;
-    };
+      if (newRecords?.length) {
+        nameSelections.value = [
+          ...new Set(newRecords.map((order) => order.customer_name)),
+        ];
+        countrySelections.value = [
+          ...new Set(newRecords.map((order) => order.country)),
+        ];
+      }
+    });
 
     return {
+      lastUpdated,
       showFilterPopup,
       headers,
-      filteredData,
-      customerNames,
-      countries,
-      onApplyFilters,
+      records,
+      nameSelections,
+      countrySelections,
     };
   },
 };
@@ -244,7 +114,14 @@ export default {
 .sales-dashboard {
   display: flex;
   justify-content: space-between;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 5px 0;
+
+  &__timestamp {
+    font-size: 10px;
+    color: #01579b;
+    font-style: italic;
+    margin: 0 0 24px 0;
+  }
 }
 
 .sales-filter {

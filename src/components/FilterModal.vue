@@ -177,7 +177,9 @@
 </template>
 
 <script>
-import { ref, reactive, watch, computed } from "vue";
+import { ref, reactive, watch, computed, onMounted } from "vue";
+import { useSalesStore } from "@/store/salesStore";
+import { validateDate, formatDate, toggleAll } from "@/utils/filterUtils";
 
 export default {
   props: {
@@ -192,6 +194,9 @@ export default {
   },
 
   setup(_, { emit }) {
+    const store = useSalesStore();
+    const { fetchFilteredRecords } = store;
+
     const dateTo = ref("");
     const dateFrom = ref("");
 
@@ -213,60 +218,37 @@ export default {
       others: false,
     });
 
-    const dateValidation = (value) => {
-      if (value && !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)) {
-        return "Date must be in MM/DD/YYYY format";
-      }
-      if (
-        (dateFrom.value && !dateTo.value) ||
-        (!dateFrom.value && dateTo.value)
-      ) {
-        return "Both start and end dates must be filled";
-      }
-      return true;
-    };
+    const dateValidation = (value) => validateDate(value);
 
     // Checkbox logic for All or Specifics
-    const toggleStatus = (statusType = null) => {
-      if (statusType === "all") {
-        allStatus.value = true;
-        Object.keys(status).forEach((key) => (status[key] = false));
-      } else {
-        allStatus.value = !Object.values(status).includes(true);
-      }
-    };
+    const toggleStatus = (statusType = null) =>
+      toggleAll(statusType, allStatus, status);
 
-    const toggleCategory = (categoryType = null) => {
-      if (categoryType === "all") {
-        allCategories.value = true;
-        Object.keys(category).forEach((key) => (category[key] = false));
-      } else {
-        allCategories.value = !Object.values(category).includes(true);
-      }
-    };
+    const toggleCategory = (categoryType = null) =>
+      toggleAll(categoryType, allCategories, category);
 
-    // Card related properties
+    // Card actions
     const closeCard = () => {
+      const hasFilters = [
+        dateTo.value,
+        dateFrom.value,
+        selectedCustomers.value.length,
+        selectedCountries.value.length,
+        Object.values(status).includes(true),
+        Object.values(category).includes(true),
+      ].some(Boolean);
+
       if (
-        dateTo.value ||
-        dateFrom.value ||
-        selectedCustomers.value.length ||
-        selectedCountries.value.length ||
-        Object.values(status).includes(true) ||
-        Object.values(category).includes(true)
+        !hasFilters ||
+        confirm(
+          "Some filter settings detected. Are you sure you want to close?"
+        )
       ) {
-        if (
-          confirm(
-            "Some filter settings detected. Are you sure you want to close?"
-          )
-        ) {
-          emit("close");
-        }
-      } else {
         emit("close");
       }
     };
 
+    // Disable Apply button based on date validation
     const isApplyDisabled = computed(() => {
       return (
         (dateFrom.value && !dateTo.value) ||
@@ -319,22 +301,15 @@ export default {
       }
     };
 
-    // Load filters from stored session on mount
-    loadFilters();
-
-    const applyFilters = () => {
-      const formatDate = (date) => {
-        if (!date) return null;
-
-        const [month, day, year] = date.split("/");
-        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-      };
-
-      const filters = {
-        dateFrom: formatDate(dateFrom.value),
-        dateTo: formatDate(dateTo.value),
+    const prepareFilterData = () => {
+      return {
+        date_from: formatDate(dateFrom.value),
+        date_to: formatDate(dateTo.value),
         customers: selectedCustomers.value.length
           ? selectedCustomers.value
+          : [],
+        countries: selectedCountries.value.length
+          ? selectedCountries.value
           : [],
         status: allStatus.value
           ? []
@@ -342,13 +317,24 @@ export default {
         category: allCategories.value
           ? []
           : Object.keys(category).filter((c) => category[c]),
-        countries: selectedCountries.value.length
-          ? selectedCountries.value
-          : [],
       };
-
-      emit("apply-filters", filters);
     };
+
+    const applyFilters = () => {
+      const filters = prepareFilterData();
+      fetchFilteredRecords(filters)
+        .then(() => {
+          emit("close");
+        })
+        .catch((err) => {
+          console.error("Failed to retrieve filtered records: ", err);
+          throw new Error("Failed to retrieve filtered records");
+        });
+    };
+
+    onMounted(() => {
+      loadFilters();
+    });
 
     watch(
       [
